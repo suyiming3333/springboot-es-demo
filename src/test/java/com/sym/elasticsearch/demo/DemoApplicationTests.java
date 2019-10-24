@@ -1,7 +1,11 @@
 package com.sym.elasticsearch.demo;
 
+import com.sym.elasticsearch.demo.entity.Attachement;
 import com.sym.elasticsearch.demo.entity.Commodity;
 import com.sym.elasticsearch.demo.service.CommodityService;
+import org.elasticsearch.client.transport.TransportClient;
+import org.elasticsearch.common.xcontent.XContentBuilder;
+import org.elasticsearch.common.xcontent.XContentFactory;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,6 +17,7 @@ import org.springframework.data.elasticsearch.core.query.IndexQueryBuilder;
 import org.springframework.data.elasticsearch.core.query.NativeSearchQueryBuilder;
 import org.springframework.data.elasticsearch.core.query.SearchQuery;
 
+import java.io.IOException;
 import java.util.List;
 
 @SpringBootTest
@@ -20,6 +25,9 @@ class DemoApplicationTests {
 
     @Autowired
     private CommodityService commodityService;
+
+    @Autowired
+    private TransportClient transportClient;
 
     @Test
     void contextLoads() {
@@ -100,6 +108,20 @@ class DemoApplicationTests {
                 .build();
         List<Commodity> list = elasticsearchTemplate.queryForList(searchQuery, Commodity.class);
         System.out.println(list);
+    }
+
+
+    @Test
+    public void test(){
+        SearchQuery searchQuery = new NativeSearchQueryBuilder()
+                .withQuery(QueryBuilders.matchQuery("content", "目前"))
+                .build();
+//        long cnt = elasticsearchTemplate.count(searchQuery);
+        List<Attachement> list = elasticsearchTemplate.queryForList(searchQuery, Attachement.class);
+
+        System.out.println(1);
+
+
     }
 
 
