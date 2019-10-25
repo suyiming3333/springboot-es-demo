@@ -1,126 +1,149 @@
 package com.sym.elasticsearch.demo;
 
+import com.google.gson.Gson;
 import com.sym.elasticsearch.demo.entity.Attachement;
-import com.sym.elasticsearch.demo.entity.Commodity;
-import com.sym.elasticsearch.demo.service.CommodityService;
-import org.elasticsearch.client.transport.TransportClient;
+import io.searchbox.client.JestClient;
+import io.searchbox.client.JestResult;
+import io.searchbox.core.Get;
+import io.searchbox.core.Search;
+import io.searchbox.indices.CreateIndex;
+import io.searchbox.indices.mapping.PutMapping;
+import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.xcontent.XContentBuilder;
-import org.elasticsearch.common.xcontent.XContentFactory;
-import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.common.xcontent.XContentType;
+import org.elasticsearch.index.mapper.*;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.data.domain.Page;
-import org.springframework.data.elasticsearch.core.ElasticsearchTemplate;
-import org.springframework.data.elasticsearch.core.query.IndexQuery;
-import org.springframework.data.elasticsearch.core.query.IndexQueryBuilder;
-import org.springframework.data.elasticsearch.core.query.NativeSearchQueryBuilder;
-import org.springframework.data.elasticsearch.core.query.SearchQuery;
 
 import java.io.IOException;
-import java.util.List;
 
 @SpringBootTest
 class DemoApplicationTests {
 
     @Autowired
-    private CommodityService commodityService;
+    private JestClient jestClient;
 
-    @Autowired
-    private TransportClient transportClient;
 
     @Test
-    void contextLoads() {
-        System.out.println(commodityService.count());
-
-    }
-
-    @Test
-    public void testInsert() {
-        Commodity commodity = new Commodity();
-        commodity.setSkuId("1501009001");
-        commodity.setName("原味切片面包（10片装）");
-        commodity.setCategory("101");
-        commodity.setPrice(880);
-        commodity.setBrand("良品铺子");
-        commodityService.save(commodity);
-
-        commodity = new Commodity();
-        commodity.setSkuId("1501009002");
-        commodity.setName("原味切片面包（6片装）");
-        commodity.setCategory("101");
-        commodity.setPrice(680);
-        commodity.setBrand("良品铺子");
-        commodityService.save(commodity);
-
-        commodity = new Commodity();
-        commodity.setSkuId("1501009004");
-        commodity.setName("元气吐司850g");
-        commodity.setCategory("101");
-        commodity.setPrice(120);
-        commodity.setBrand("百草味");
-        commodityService.save(commodity);
-
-    }
-
-    @Test
-    public void testGetAll() {
-        Iterable<Commodity> iterable = commodityService.getAll();
-        iterable.forEach(e->System.out.println(e.toString()));
-    }
-
-    @Test
-    public void testGetByName() {
-        List<Commodity> list = commodityService.getByName("面包");
-        System.out.println(list);
-    }
-
-    @Test
-    public void testPage() {
-        Page<Commodity> page = commodityService.pageQuery(0, 10, "切片");
-        System.out.println(page.getTotalPages());
-        System.out.println(page.getNumber());
-        System.out.println(page.getContent());
+    public void createIndex(){
+        JestResult jr = null;
+        try {
+            jr = jestClient.execute(new CreateIndex.Builder("jest").build());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        System.out.println(jr.isSucceeded());
     }
 
 
-    @Autowired
-    public ElasticsearchTemplate elasticsearchTemplate;
+//    @Test
+//    public void createIndexByFormattedJsonString(){
+//        String settings = "settings\" : {\n" +
+//                "        \"number_of_shards\" : 5,\n" +
+//                "        \"number_of_replicas\" : 1\n" +
+//                "    }\n";
+//
+//        JestResult jr = null;
+//        try {
+//            jr = jestClient.execute(new CreateIndex.Builder("articles").settings(Settings.builder().loadFromSource(settings, XContentType.JSON).build()).build());
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
+//        System.out.println(jr.isSucceeded());
+//
+//    }
 
+//    @Test
+//    public void createIndexByBuilder(){
+//        JestResult jr = null;
+//        Settings.Builder settingsBuilder = Settings.builder();
+//        settingsBuilder.put("number_of_shards",3);
+//        settingsBuilder.put("number_of_replicas",1);
+//
+//        try {
+//            jr = jestClient.execute(new CreateIndex.Builder("articles").settings(settingsBuilder.build()).build());
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
+//        System.out.println(jr.isSucceeded());
+//
+//    }
 
     @Test
-    public void testInsertByTemplate() {
-        Commodity commodity = new Commodity();
-        commodity.setSkuId("1501009005");
-        commodity.setName("葡萄吐司面包（10片装）");
-        commodity.setCategory("101");
-        commodity.setPrice(160);
-        commodity.setBrand("良品铺子");
+    public void createIndexMapping(){
+        JestResult jr = null;
 
-        IndexQuery indexQuery = new IndexQueryBuilder().withObject(commodity).build();
-        elasticsearchTemplate.index(indexQuery);
+        PutMapping putMapping = new PutMapping.Builder(
+                "my_index",
+                "my_type",
+                "{ \"my_type\" : { \"properties\" : { \"message\" : {\"type\" : \"string\", \"store\" : \"yes\"} } } }"
+        ).build();
+
+        try {
+            jr = jestClient.execute(putMapping);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        System.out.println(jr.isSucceeded());
+
     }
 
+    public void createIndexMappingBy(){
+//        RootObjectMapper.Builder rootObjectMapperBuilder = new RootObjectMapper.Builder("my_mapping_name").add(
+//                new AllFieldMapper.Builder().Builder("message").store(true)
+//        );
+//        DocumentMapper documentMapper = new DocumentMapper.Builder("my_index", null, rootObjectMapperBuilder).build(null);
+//        String expectedMappingSource = documentMapper.mappingSource().toString();
+//        PutMapping putMapping = new PutMapping.Builder(
+//                "my_index",
+//                "my_type",
+//                expectedMappingSource
+//        ).build();
+//        client.execute(putMapping);
+    }
+
+
+    /**
+     * jest 根据id查询
+     */
     @Test
-    public void testQuery() {
-        SearchQuery searchQuery = new NativeSearchQueryBuilder()
-                .withQuery(QueryBuilders.matchQuery("name", "吐司"))
-                .build();
-        List<Commodity> list = elasticsearchTemplate.queryForList(searchQuery, Commodity.class);
-        System.out.println(list);
+    public void getTest(){
+        JestResult jr = null;
+
+        try {
+            jr = jestClient.execute(new Get.Builder("attachment1024", "2").build());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        System.out.println(jr.isSucceeded());
+
     }
 
 
     @Test
-    public void test(){
-        SearchQuery searchQuery = new NativeSearchQueryBuilder()
-                .withQuery(QueryBuilders.matchQuery("content", "目前"))
-                .build();
-//        long cnt = elasticsearchTemplate.count(searchQuery);
-        List<Attachement> list = elasticsearchTemplate.queryForList(searchQuery, Attachement.class);
+    public void searchTest(){
+        JestResult jr = null;
 
-        System.out.println(1);
+        String search = "{\n" +
+                "  \"query\": {\n" +
+                "    \"match\": {\n" +
+                "      \"attachment.content\": \"目前\"\n" +
+                "    }\n" +
+                "  },\n" +
+                "  \"highlight\": {\n" +
+                "    \"fields\": {\n" +
+                "      \"attachment.content\": {}\n" +
+                "    }\n" +
+                "  }\n" +
+                "}";
 
+        try {
+            jr = jestClient.execute(new Search.Builder(search).build());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        System.out.println(jr.isSucceeded());
 
     }
 
