@@ -1,22 +1,28 @@
 package com.sym.elasticsearch.demo;
 
-import com.google.gson.Gson;
-import com.sym.elasticsearch.demo.entity.Attachement;
+import com.alibaba.fastjson.JSON;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.gson.JsonObject;
+import com.sym.elasticsearch.demo.entity.MyAttachement;
 import io.searchbox.client.JestClient;
 import io.searchbox.client.JestResult;
 import io.searchbox.core.Get;
 import io.searchbox.core.Search;
+import io.searchbox.core.SearchResult;
 import io.searchbox.indices.CreateIndex;
 import io.searchbox.indices.mapping.PutMapping;
-import org.elasticsearch.common.settings.Settings;
-import org.elasticsearch.common.xcontent.XContentBuilder;
-import org.elasticsearch.common.xcontent.XContentType;
-import org.elasticsearch.index.mapper.*;
+
+import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.search.builder.SearchSourceBuilder;
+import org.elasticsearch.search.fetch.subphase.highlight.HighlightBuilder;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
 import java.io.IOException;
+import java.util.List;
+import java.util.Map;
 
 @SpringBootTest
 class DemoApplicationTests {
@@ -144,6 +150,81 @@ class DemoApplicationTests {
             e.printStackTrace();
         }
         System.out.println(jr.isSucceeded());
+
+    }
+
+
+    @Test
+    public void searchTest2(){
+        JestResult jr = null;
+
+        ObjectMapper mapper = new ObjectMapper();
+        JsonNode jsonNode1 = mapper.createObjectNode()
+                .set("query",
+                        mapper.createObjectNode().set("match",
+                                mapper.createObjectNode().put("attachment.content","目前")));
+
+        JsonNode jsonNode2 = mapper.createObjectNode()
+                .set("highlight",
+                        mapper.createObjectNode().set("fields",
+                                mapper.createObjectNode().put("attachment.content","")));
+
+
+        try {
+            jr = jestClient.execute(new Search.Builder(jsonNode1.toString()).build());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        System.out.println(jsonNode1.toString());
+        System.out.println(jr.isSucceeded());
+
+    }
+
+    @Test
+    public void searchTest3(){
+        SearchResult jr = null;
+
+        SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
+        searchSourceBuilder.query(QueryBuilders.matchQuery("attachment.content","目前"));
+
+        HighlightBuilder highlightBuilder = new HighlightBuilder();
+        highlightBuilder.field("attachment.content");//高亮title
+        highlightBuilder.preTags("<em>").postTags("</em>");//高亮标签
+        highlightBuilder.fragmentSize(500);//高亮内容长度
+        searchSourceBuilder.highlighter(highlightBuilder);
+
+        System.out.println(searchSourceBuilder.toString());
+
+        try {
+            jr = jestClient.execute(
+                    new Search.Builder(searchSourceBuilder.toString())
+                            .addIndex("attachment1024")
+                            .addType("myattachement")
+//                            .addSort()
+                            .build());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        System.out.println("本次查询共查到："+ jr.getTotal()+"篇文章！");
+
+        JsonObject object = jr.getJsonObject();
+        List<MyAttachement> hits = jr.getSourceAsObjectList(MyAttachement.class,true);
+
+        System.out.println(hits.size());
+
+//        for(MyAttachement hit : hits){
+//            String source = hit.source.toString();
+//            JSON json = JSON.parseObject(source);
+//
+//            Map<String, List<String>> highlight = hit.highlight;
+//
+//            List<String> views = highlight.get("content");//高亮后的title
+//
+//
+//        }
+
+        System.out.println("end");
 
     }
 

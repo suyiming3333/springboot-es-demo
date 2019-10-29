@@ -4,25 +4,20 @@ import lombok.Data;
 
 import java.io.Serializable;
 
-
 /**
  * @author suyiming3333@gmail.com
  * @version V1.0
- * @Title: Attachement
+ * @Title: MyAttachement
  * @Package com.sym.elasticsearch.demo.entity
  * @Description: TODO
- * @date 2019/10/24 16:17
+ * @date 2019/10/29 17:02
  */
-
 @Data
-public class Attachement implements Serializable {
+public class MyAttachement implements Serializable {
 
-    private String content_type;
+    private String id;
 
-    private String language;
+    private String filename;
 
-    private String content;
-
-    private String content_length;
-
+    private Attachement attachement;
 }
