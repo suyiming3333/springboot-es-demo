@@ -4,6 +4,7 @@ import com.alibaba.fastjson.JSON;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.JsonObject;
+import com.sym.elasticsearch.demo.config.TransportClientUtil;
 import com.sym.elasticsearch.demo.entity.MyAttachement;
 import io.searchbox.client.JestClient;
 import io.searchbox.client.JestResult;
@@ -13,14 +14,19 @@ import io.searchbox.core.SearchResult;
 import io.searchbox.indices.CreateIndex;
 import io.searchbox.indices.mapping.PutMapping;
 
+import io.searchbox.indices.template.PutTemplate;
+import org.elasticsearch.client.transport.TransportClient;
+import org.elasticsearch.common.xcontent.XContentBuilder;
+import org.elasticsearch.common.xcontent.XContentFactory;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.fetch.subphase.highlight.HighlightBuilder;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.util.Base64Utils;
 
-import java.io.IOException;
+import java.io.*;
 import java.util.List;
 import java.util.Map;
 
@@ -29,6 +35,9 @@ class DemoApplicationTests {
 
     @Autowired
     private JestClient jestClient;
+
+    @Autowired
+    private TransportClient transportClient;
 
 
     @Test
@@ -223,6 +232,40 @@ class DemoApplicationTests {
 //
 //
 //        }
+
+        System.out.println("end");
+
+    }
+
+
+    @Test
+    public void indexFile() throws IOException {
+        File file = new File("D:\\security.pdf");
+
+        InputStream is = new FileInputStream(file);
+
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+
+        byte[] tmp = new byte[1024];
+        int len = 0;
+        while ((len = is.read(tmp)) != -1) {
+            out.write(tmp, 0, len);
+        }
+
+
+        String data = Base64Utils.encodeToString(out.toByteArray()).replaceAll("\r|\n", "");
+
+        XContentBuilder xContentBuilder = XContentFactory.jsonBuilder().startObject()
+                .field("id","12")
+                .field("filename","security.pdf")
+                .field("data",data)
+                .endObject();
+
+
+        transportClient.prepareIndex("attachment1024","myattachement")
+                .setPipeline("myattachment")
+                .setSource(xContentBuilder)
+                .get();
 
         System.out.println("end");
 
