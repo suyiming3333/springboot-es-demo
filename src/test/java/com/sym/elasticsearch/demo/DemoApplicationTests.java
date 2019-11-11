@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.JsonObject;
 import com.sym.elasticsearch.demo.config.TransportClientUtil;
 import com.sym.elasticsearch.demo.entity.MyAttachement;
+import com.sym.elasticsearch.demo.service.ElasticSearchService;
 import io.searchbox.client.JestClient;
 import io.searchbox.client.JestResult;
 import io.searchbox.core.Get;
@@ -15,10 +16,24 @@ import io.searchbox.indices.CreateIndex;
 import io.searchbox.indices.mapping.PutMapping;
 
 import io.searchbox.indices.template.PutTemplate;
+import org.apache.el.util.JreCompat;
+import org.elasticsearch.action.ingest.PutPipelineAction;
+import org.elasticsearch.action.ingest.PutPipelineRequest;
 import org.elasticsearch.client.transport.TransportClient;
+import org.elasticsearch.common.Strings;
+import org.elasticsearch.common.bytes.BytesArray;
+import org.elasticsearch.common.bytes.BytesReference;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
+import org.elasticsearch.common.xcontent.XContentType;
+import org.elasticsearch.index.mapper.AllFieldMapper;
+import org.elasticsearch.index.mapper.DocumentMapper;
+import org.elasticsearch.index.mapper.RootObjectMapper;
 import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.ingest.CompoundProcessor;
+import org.elasticsearch.ingest.IngestDocument;
+import org.elasticsearch.ingest.Pipeline;
+import org.elasticsearch.ingest.ProcessorInfo;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.fetch.subphase.highlight.HighlightBuilder;
 import org.junit.jupiter.api.Test;
@@ -29,6 +44,7 @@ import org.springframework.util.Base64Utils;
 import java.io.*;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 @SpringBootTest
 class DemoApplicationTests {
@@ -38,6 +54,9 @@ class DemoApplicationTests {
 
     @Autowired
     private TransportClient transportClient;
+
+    @Autowired
+    private ElasticSearchService elasticSearchService;
 
 
     @Test
@@ -104,11 +123,11 @@ class DemoApplicationTests {
 
     }
 
-    public void createIndexMappingBy(){
+//    public void createIndexMappingBy(){
 //        RootObjectMapper.Builder rootObjectMapperBuilder = new RootObjectMapper.Builder("my_mapping_name").add(
 //                new AllFieldMapper.Builder().Builder("message").store(true)
 //        );
-//        DocumentMapper documentMapper = new DocumentMapper.Builder("my_index", null, rootObjectMapperBuilder).build(null);
+//        DocumentMapper documentMapper = new DocumentMapper.Builder(rootObjectMapperBuilder, null, rootObjectMapperBuilder).build(null);
 //        String expectedMappingSource = documentMapper.mappingSource().toString();
 //        PutMapping putMapping = new PutMapping.Builder(
 //                "my_index",
@@ -116,7 +135,7 @@ class DemoApplicationTests {
 //                expectedMappingSource
 //        ).build();
 //        client.execute(putMapping);
-    }
+//    }
 
 
     /**
@@ -261,7 +280,6 @@ class DemoApplicationTests {
                 .field("data",data)
                 .endObject();
 
-
         transportClient.prepareIndex("attachment1024","myattachement")
                 .setPipeline("myattachment")
                 .setSource(xContentBuilder)
@@ -269,6 +287,108 @@ class DemoApplicationTests {
 
         System.out.println("end");
 
+    }
+
+    @Test
+    public void testService(){
+        MyAttachement myAttachement = elasticSearchService.getDocumentById(new MyAttachement(),"attachment1024","2");
+        System.out.println(1);
+    }
+
+    @Test
+    public void createIndexByService(){
+        elasticSearchService.createIndex("my1101");
+        System.out.println(1);
+    }
+
+    @Test
+    public void createIndexMappingByService() throws IOException {
+        XContentBuilder builder = XContentFactory.jsonBuilder()
+                .startObject()
+                .startObject("attachment")
+                .startObject("properties")
+                .startObject("message").field("type","text").field("store","true").endObject()
+                .endObject()
+                .endObject()
+                .endObject();
+        String mappings = Strings.toString(builder);
+        System.out.println(mappings);
+
+//        String mappings = "{ \"type2\" : { \"properties\" : { \"message\" : {\"type\" : \"text\", \"store\" : \"true\"} } } }";
+
+//        String mappings = "{\"type1\":{\"properties\":{\"id\":{\"type\":\"keyword\"},\"filename\":{\"type\":\"text\",\"analyzer\":\"ik_max_word\",\"search_analyzer\":\"ik_max_word\"},\"data\":{\"type\":\"text\",\"analyzer\":\"ik_max_word\",\"search_analyzer\":\"ik_max_word\",\"store\":\"true\"}}}}";
+//        elasticSearchService.createIndexMapping("my1101","attachment",mappings);
+
+    }
+
+    @Test
+    public void testsAAA() throws Exception {
+        XContentBuilder builder = XContentFactory.jsonBuilder()
+                .startObject()
+                .field("description","xtract single attachment information")
+                .startArray("processors")
+                .startObject()
+                .startObject("attachement").field("field","data").field("indexed_chars",-1).field("ignore_missing",true).endObject()
+                .startObject("remove").field("field","data").endObject()
+                .endObject()
+                .endArray()
+                .endObject();
+
+        String mappings = Strings.toString(builder);
+        BytesReference bytesReference = BytesArray.bytes(builder);
+        System.out.println(mappings);
+        //XContentType xContentType = new XContentBuilder().contentType().index(0);
+        PutPipelineRequest putPipelineRequest = new PutPipelineRequest("id",bytesReference,XContentType.JSON);
+//        jestClient.
+    }
+
+    public static void main2(String[] args) throws IOException {
+        XContentBuilder builder = XContentFactory.jsonBuilder()
+                .startObject()
+                .field("description","xtract single attachment information")
+                .startArray("processors")
+                .startObject()
+                .startObject("attachement").field("field","data").field("indexed_chars",-1).field("ignore_missing",true).endObject()
+                .startObject("remove").field("field","data").endObject()
+                .endObject()
+                .endArray()
+                .endObject();
+
+        String mappings = Strings.toString(builder);
+        System.out.println(mappings);
+    }
+
+
+    private static boolean isStop = false;
+
+    public static void main(String[] args){
+
+        Thread thread1 = new Thread(){
+            @Override
+            public void run() {
+                while(true){
+                    System.out.println("now time"+ System.currentTimeMillis());
+                    try {
+                        //线程的sleep方法将会抛出 InterruptedException异常,interrup标志位会被清空
+                        TimeUnit.SECONDS.sleep(5);
+                    } catch (InterruptedException e) {
+                        this.interrupt();//抛出异常后，需要再一次设置标志位
+                        e.printStackTrace();
+                    }
+                    if(isStop){
+                        System.out.println("ready to exit");
+                        break;
+                    }
+                }
+            }
+        };
+
+        thread1.setName("aaaa");
+        System.out.println("start time"+System.currentTimeMillis());
+        thread1.start();
+//        thread1.interrupt();//中断线程请求
+        isStop = true;
+        System.out.println("end time"+System.currentTimeMillis());
     }
 
 
