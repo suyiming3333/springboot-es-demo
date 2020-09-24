@@ -19,22 +19,22 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class JestClientConfig {
 
-    private String url = "http://10.0.75.1:9200";
-
-    @Bean
-    public JestClient jestClient(){
-
-        JestClientFactory factory = new JestClientFactory();
-        factory.setHttpClientConfig(new HttpClientConfig
-                .Builder(url)
-                .gson(new GsonBuilder().setDateFormat("yyyy-MM-dd'T'HH:mm:ss").create())
-                .multiThreaded(true)
-                .readTimeout(10000)
-                .build());
-
-        JestClient client = factory.getObject();
-        System.out.println("init jest");
-        return client;
-    }
+//    private String url = "http://127.0.0.1:9200";
+//
+//    @Bean
+//    public JestClient jestClient(){
+//
+//        JestClientFactory factory = new JestClientFactory();
+//        factory.setHttpClientConfig(new HttpClientConfig
+//                .Builder(url)
+//                .gson(new GsonBuilder().setDateFormat("yyyy-MM-dd'T'HH:mm:ss").create())
+//                .multiThreaded(true)
+//                .readTimeout(10000)
+//                .build());
+//
+//        JestClient client = factory.getObject();
+//        System.out.println("init jest");
+//        return client;
+//    }
 
 }

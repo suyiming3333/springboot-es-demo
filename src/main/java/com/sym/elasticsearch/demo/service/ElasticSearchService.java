@@ -47,7 +47,7 @@ public class ElasticSearchService {
         try {
 
             Settings.Builder settingsBuilder = Settings.builder();
-            settingsBuilder.put("number_of_shards",4);
+            settingsBuilder.put("number_of_shards",5);
             settingsBuilder.put("number_of_replicas",1);
             JestResult jestResult = jestClient.execute(new CreateIndex.Builder(index).settings(settingsBuilder.build().toString()).build());
 //            JestResult jestResult = jestClient.execute(new CreateIndex.Builder(index).build());
@@ -100,7 +100,7 @@ public class ElasticSearchService {
      *     }
      * }
      */
-    public void createIndexMapping(String index,String type,String mappings){
+    public void createIndexByPutMapping(String index,String type,String mappings){
 
         PutMapping.Builder builder = new PutMapping.Builder(index, type, mappings);
 
