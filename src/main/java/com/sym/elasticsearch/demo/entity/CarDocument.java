@@ -30,4 +30,5 @@ public class CarDocument {
     private String color;
     private String make;
     private String sold;
+    private String level;
 }

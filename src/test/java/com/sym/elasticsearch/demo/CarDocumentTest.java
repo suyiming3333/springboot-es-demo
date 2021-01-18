@@ -10,6 +10,7 @@ import io.searchbox.core.SearchResult;
 import io.searchbox.core.search.aggregation.TermsAggregation;
 import io.searchbox.indices.CreateIndex;
 import io.searchbox.indices.DeleteIndex;
+import io.searchbox.indices.type.TypeExist;
 import org.elasticsearch.common.Strings;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.xcontent.XContentBuilder;
@@ -54,41 +55,94 @@ public class CarDocumentTest {
 
     @Test
     public void testCreateIndex() throws IOException {
-        String indexName = "test_cars";
+        String indexName = "liverecordidx3";
         Settings.Builder settingsBuilder = Settings.builder();
         settingsBuilder.put("number_of_shards",5);
         settingsBuilder.put("number_of_replicas",1);
-        CreateIndex createIndex = new CreateIndex.Builder(indexName).build();
-        JestResult result = jestClient.execute(createIndex);
+
+        //判断索引是否存在
+        TypeExist indexExist = new TypeExist.Builder(indexName).build();
+        JestResult result = jestClient.execute(indexExist);
+//        CreateIndex createIndex = new CreateIndex.Builder(indexName).build();
+//        JestResult result = jestClient.execute(createIndex);
         System.out.println(result.getJsonString());
     }
 
 
     /**
      * 利用辅助工具生成自定义需要的mappings 字符串
+     *
+     *      *     "mappings" : {
+     *      *         "myattachement" : {
+     *      *             "properties" : {
+     *      *                 "id": {
+     *      *                     "type": "keyword"
+     *      *                 },
+     *      *                 "filename": {
+     *      *                     "type": "text",
+     *      *                 	   "analyzer": "ik_max_word",
+     *      *                 	   "search_analyzer": "ik_max_word"
+     *      *
+     *      *                 },
+     *      *                 "data":{
+     *      *                     "type": "text",
+     *      *                 	   "analyzer": "ik_max_word",
+     *      *                 	   "search_analyzer": "ik_max_word",
+     *      *                 	   "store": "true"
+     *      *                 	}
+     *      *             }
+     *      *         }
+     *      *     }
+     *      * }
+     *
      * @throws IOException
      */
     @Test
     public void testCreateIndexByPutMappings() throws IOException {
+//        XContentBuilder builder = XContentFactory.jsonBuilder()
+//                .startObject()
+//                        .field("abc")
+//                        .startObject()
+//                            .field("properties")
+//                            .startObject()
+//                                .field("id").startObject().field("type","keyword").endObject()
+//                                .field("filename").startObject().field("type","text").field("analyzer","ik_max_word").field("search_analyzer","ik_max_word").endObject()
+//                                .field("data").startObject().field("type","text").field("analyzer","ik_max_word").field("search_analyzer","ik_max_word").field("store",true).endObject()
+//                            .endObject()
+//                        .endObject()
+//                .endObject();
+
+
         XContentBuilder builder = XContentFactory.jsonBuilder()
                 .startObject()
-                    .field("mappings")
-                    .startObject()
-                        .field("myattachement")
-                        .startObject()
-                            .field("properties")
-                            .startObject()
-                                .field("id").startObject().field("type","keyword").endObject()
-                                .field("filename").startObject().field("type","text").field("analyzer","ik_max_word").field("search_analyzer","ik_max_word").endObject()
-                                .field("data").startObject().field("type","text").field("analyzer","ik_max_word").field("search_analyzer","ik_max_word").field("store",true).endObject()
-                            .endObject()
-                        .endObject()
-                    .endObject()
+                .field("liverecord")
+                .startObject()
+                .field("properties")
+                .startObject()
+                .field("id")
+                .startObject().field("type","keyword").endObject()
+                .field("realName")
+                .startObject().field("type","text").endObject()
+                .field("userName")
+                .startObject().field("type","text").endObject()
+                .field("orgPath")
+                .startObject().field("type","text").endObject()
+                .field("sips")
+                .startObject().field("type","text").endObject()
+                .field("type")
+                .startObject().field("type","text").endObject()
+                .field("dateTime")
+                .startObject().field("type","date").field("format","yyyy-MM-dd HH:mm:ss||yyyy-MM-dd||epoch_millis").endObject()
+                .endObject()
+                .endObject()
                 .endObject();
+        String mapping = Strings.toString(builder);
 
-        String mappings = Strings.toString(builder);
-        System.out.println(mappings);
-        elasticSearchService.createIndexByPutMapping("index20200923","mya",mappings);
+        //判断mapping是否存在
+        TypeExist typeExist = new TypeExist.Builder("liverecordidx3").addType("liverecord").build();
+        JestResult result = jestClient.execute(typeExist);
+        System.out.println(mapping);
+        elasticSearchService.createIndexByPutMapping("liverecordidx3","liverecord",mapping);
     }
 
     /**
@@ -98,14 +152,15 @@ public class CarDocumentTest {
     @Test
     public void testAddorUpdateDoc() throws IOException {
         CarDocument carDocument = new CarDocument();
-        carDocument.setId("hfE2unQBOGe7WWis5VJS");
+        carDocument.setId("hfE2unQBOGe7WWis5VKS");
         carDocument.setColor("black");
         carDocument.setMake("bmw");
         carDocument.setPrice(50000l);
         carDocument.setSold("2020-09-23");
+        carDocument.setLevel("0");
 
         Index.Builder builder = new Index.Builder(carDocument);
-        Index index = builder.index("cars").type("transactions").build();
+        Index index = builder.index("test_cars1").type("transactions").build();
         JestResult result = jestClient.execute(index);
         System.out.println(result.getJsonString());
     }

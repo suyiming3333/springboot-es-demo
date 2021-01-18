@@ -9,6 +9,7 @@ import io.searchbox.indices.DeleteIndex;
 import io.searchbox.indices.mapping.GetMapping;
 import io.searchbox.indices.mapping.PutMapping;
 import io.searchbox.indices.settings.GetSettings;
+import io.searchbox.indices.type.TypeExist;
 import org.elasticsearch.action.ingest.PutPipelineAction;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.ingest.CompoundProcessor;
@@ -49,6 +50,10 @@ public class ElasticSearchService {
             Settings.Builder settingsBuilder = Settings.builder();
             settingsBuilder.put("number_of_shards",5);
             settingsBuilder.put("number_of_replicas",1);
+
+            //判断索引是否存在
+            TypeExist indexExist = new TypeExist.Builder(index).build();
+
             JestResult jestResult = jestClient.execute(new CreateIndex.Builder(index).settings(settingsBuilder.build().toString()).build());
 //            JestResult jestResult = jestClient.execute(new CreateIndex.Builder(index).build());
             logger.info("createIndex:{},result:{}",index,jestResult.isSucceeded());
