@@ -1,5 +1,11 @@
+#spring:
+#  data:
+#    elasticsearch:
+#      cluster-name: docker-cluster
+#      cluster-nodes: 192.168.16.139:9300
 spring:
-  data:
-    elasticsearch:
-      cluster-name: docker-cluster
-      cluster-nodes: 192.168.16.139:9300
+  elasticsearch:
+    rest:
+      uris: 192.168.16.139:9200
+server:
+  port: 8099
