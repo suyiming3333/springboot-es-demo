@@ -5,6 +5,7 @@ import cn.hutool.json.JSONUtil;
 import com.sym.elasticsearch.demo.entity.Attachement;
 import com.sym.elasticsearch.demo.entity.Commodity;
 import com.sym.elasticsearch.demo.service.CommodityService;
+import com.sym.elasticsearch.demo.service.PositionService;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.xcontent.XContentBuilder;
@@ -198,6 +199,14 @@ class DemoApplicationTests {
         System.out.println(list);
     }
 
+    @Autowired
+    private PositionService positionService;
+
+    @Test
+    public void loadMysqlDate() throws IOException {
+        positionService.importAll();
+        System.out.println("ednd");
+    }
 
     @Test
     public void test(){
